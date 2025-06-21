@@ -1,0 +1,12 @@
+streamlit>=1.32.0
+python-dotenv>=1.0.0
+
+# LangChain ecosystem
+langchain-core>=0.2.0
+langchain-community>=0.2.0
+langchain-google-genai>=0.2.0
+langchain>=0.2.0          # base package (for AgentExecutor, etc.)
+
+
+# Tavily helper (sometimes installed automatically, but include for safety)
+tavily-python>=0.1.4
