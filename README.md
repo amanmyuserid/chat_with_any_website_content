@@ -1,81 +1,84 @@
 # 💬 Chat with Any Website Content · Streamlit Chatbot
 
-A two-column Streamlit app that lets you ask questions about **any website** and receive answers grounded **only** in that site’s content.  
-Under the hood it:
+Ask questions about **any website** and get answers that are **strictly** grounded in that site’s own pages.
 
-1. Accepts a *base URL* and a *question* from the user.  
-2. Runs a domain-restricted Tavily search to fetch relevant pages.  
-3. Uses Google Gemini (via LangChain) plus the retrieved passages to generate a concise, well-formatted Markdown answer.  
-4. Displays the reply inside a boxed, scrollable area so long outputs never break the layout.
-
----
-
-## ✨ Demo
-
-> *`https://youtu.be/TrLWcVnaKB8?si=1JduS9oH_X5MdqxZ)`*
-
+| Feature | What it does |
+|---------|--------------|
+| 🌐 **Domain-scoped search** | Tavily fetches only pages from the base URL you give. |
+| 🤖 **Gemini 2.5 Flash** | Generates concise, well-structured Markdown answers. |
+| 🖥️ **Two-column UI** | Left: URL + question.  Right: scrollable answer box. |
+| 🔒 **No hallucinations** | Prompt forbids any knowledge beyond the retrieved passages. |
 
 ---
 
-## 🚀 Quick start
+## 📺 Demo
+
+[![Watch the demo](https://img.youtube.com/vi/TrLWcVnaKB8/0.jpg)](https://youtu.be/TrLWcVnaKB8?si=1JduS9oH_X5MdqxZ)
+
+*(Click the thumbnail to view on YouTube.)*
+
+---
+
+## 🚀 Quick Start
 
 ```bash
-# 1. Clone the repo
+# 1. Clone
 git clone <your-repo-url>
 cd <repo-dir>
 
-# 2. Install dependencies
+# 2. Install
 pip install -r requirements.txt
 
-# 3. Set your API keys (Tavily & Google)
+# 3. API keys
 export TAVILY_API_KEY="sk-..."
 export GOOGLE_API_KEY="AIza..."
 
-# 4. Launch the app
+# 4. Run
 streamlit run app.py
 
 
 ⸻
 
-🗂️ Project files
+🖥️ How to Use
+	1.	Base URL – enter only the root domain (e.g. https://occamsadvisory.com).
+	2.	Question – type what you want to know.
+	3.	Click Answer.
+	4.	Read the right-hand box:
+	•	Bold one-sentence summary
+	•	Bold section headings
+	•	Concise bullet/numbered lists
+	•	Scroll if the answer is long.
+
+Tip: If you paste a URL with a path or query string, the app asks you to correct it.
+
+⸻
+
+🗂️ Project Files
 
 File	Purpose
 app.py	Streamlit UI + LangChain logic
-requirements.txt	Python package list
-README.md	You’re reading it
+requirements.txt	Python dependencies
+README.md	Project overview (this file)
 
 
 ⸻
 
-⚙️ Environment variables
+⚙️ Environment Variables
 
-Key	Description	Where to get it
-TAVILY_API_KEY	Auth token for Tavily search API	https://app.tavily.com/
-GOOGLE_API_KEY	Google Generative AI key (for Gemini)	https://makersuite.google.com/
+Variable	Description	Where to get it
+TAVILY_API_KEY	Tavily search API key	https://app.tavily.com/
+GOOGLE_API_KEY	Google Generative AI key	https://makersuite.google.com/
 
-You can set them in a .env file, your shell profile, or Streamlit’s sidebar prompts.
-
-⸻
-
-🖥️ Usage
-	1.	Base URL – enter only the domain root (e.g. https://occamsadvisory.com).
-	2.	Question – type what you want to know.
-	3.	Click Answer.
-	4.	The right-hand box shows a one-sentence summary followed by structured bullet points.
-
-Tips:
-	•	If you provide a URL with a path/query, the app will ask you to correct it.
-	•	Long answers are scrollable inside the box.
-	•	The LLM is instructed not to use any info beyond what Tavily returned.
+You can also put these in a .env file; the app will read them automatically.
 
 ⸻
 
-📦 Built with
+📦 Built With
 	•	Streamlit – rapid web UI
-	•	LangChain – agent & prompt orchestration
+	•	LangChain – agent orchestration
 	•	Gemini 2.5 Flash – LLM via langchain-google-genai
-	•	Tavily – fast, domain-scoped web search
-	•	python-dotenv – .env support
+	•	Tavily – quick, domain-restricted search
+	•	python-dotenv – easy env-var management
 
 ⸻
 
