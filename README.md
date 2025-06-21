@@ -12,8 +12,7 @@ Under the hood it:
 
 ## ✨ Demo
 
-> **Paste your YouTube demo link here**  
-> *(e.g. `https://youtu.be/xxxxxxxxxxx`)*
+
 
 ---
 
