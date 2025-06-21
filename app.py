@@ -1,11 +1,8 @@
-# Chat with any website content – Two‑Column Chatbot (v9: boxed, scrollable answer)
+# Chat with any website content – Two‑Column Chatbot (v10: robust error handling)
 # =====================================================================
-# Updates
-# -------
-# • Answer section is now wrapped in a bordered rectangle (same visual style
-#   as inputs). If the content exceeds the box height, a vertical scrollbar
-#   appears so the layout stays within a single screen.
-# • Title remains centred; all other behaviour is unchanged.
+# Change: Wrap main interaction in try/except so any runtime error is caught
+# and displayed inside the answer box instead of crashing the app. No other
+# logic altered.
 
 import os
 import streamlit as st
@@ -27,7 +24,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Sidebar for API keys (only shows if missing) --------------------------------
+# Sidebar for API keys (only shows if missing) -------------------------------
 if not os.getenv("TAVILY_API_KEY"):
     os.environ["TAVILY_API_KEY"] = st.sidebar.text_input("Tavily API Key", type="password")
 if not os.getenv("GOOGLE_API_KEY"):
@@ -43,17 +40,8 @@ if not (os.getenv("TAVILY_API_KEY") and os.getenv("GOOGLE_API_KEY")):
 st.markdown(
     """
     <style>
-        .box {
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 1rem;
-            background: #ffffff;
-        }
-        /* answer specific: limit height & scroll */
-        #answer-box.box {
-            max-height: 450px;
-            overflow-y: auto;
-        }
+        .box {border:1px solid #e0e0e0;border-radius:8px;padding:1rem;background:#fff;}
+        #answer-box.box {max-height:450px;overflow-y:auto;}
     </style>
     """,
     unsafe_allow_html=True,
@@ -67,12 +55,11 @@ left_col, right_col = st.columns(2, gap="large")
 with left_col:
     st.subheader("Website & Query")
     base_url_input = st.text_input("Base URL", placeholder="https://www.amazon.in")
-    query_input = st.text_area("Question", height=180, placeholder="What are the contact details or what is the price of macbook air m4 256gb?")
+    query_input = st.text_area("Question", height=180, placeholder="What is the price of iPhone 14?")
     run = st.button("Answer", key="answer_btn")
 
 with right_col:
     st.subheader("Answer")
-    # placeholder for boxed answer
     answer_placeholder = st.empty()
 
 # ---------------------------------------------------------------------------
@@ -88,57 +75,60 @@ def validate_base_url(url: str):
     return p.netloc, None
 
 # ---------------------------------------------------------------------------
-# 5. Main interaction
+# 5. Main interaction (wrapped with try/except)
 # ---------------------------------------------------------------------------
 if run:
-    base_url = base_url_input.strip()
-    query = query_input.strip()
+    try:
+        base_url = base_url_input.strip()
+        query = query_input.strip()
 
-    if not base_url or not query:
-        st.warning("Both base URL and query are required.")
-        st.stop()
+        if not base_url or not query:
+            raise ValueError("Both base URL and query are required.")
 
-    domain, err = validate_base_url(base_url)
-    if err:
-        st.error(err)
-        st.stop()
+        domain, err = validate_base_url(base_url)
+        if err:
+            raise ValueError(err)
 
-    # Dynamic LLM / search tool for the domain --------------------------------
-    llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-preview-05-20", temperature=0)
+        # Dynamic LLM / search tool for the domain ---------------------------
+        llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-preview-05-20", temperature=0)
 
-    tavily_tool = TavilySearchResults(
-        max_results=5,
-        include_answer=True,
-        include_raw_content=True,
-        include_domains=[domain],
-    )
+        tavily_tool = TavilySearchResults(
+            max_results=5,
+            include_answer=True,
+            include_raw_content=True,
+            include_domains=[domain],
+        )
 
-    system_msg = (
-        f"You are a helpful assistant. **Strictly** answer **only** with information found in passages retrieved via the Tavily search from {domain}."
-        f"Do **not** use prior knowledge, external facts, or assumptions."
-        f"Begin with a brief answer sentence, then provide key "
-        f"details(mention all the details, donot miss even any small information according to the query) as bulleted or numbered Markdown lists. Leave a blank line "
-        f"between separate topics for readability. Avoid long paragraphs."
-    )
+        system_msg = (
+            f"You are a helpful assistant. **Strictly** answer **only** with information found in passages retrieved via the Tavily search from {domain}. "
+            "Do **not** use prior knowledge, external facts, or assumptions. "
+            "Begin with a brief answer sentence, then provide key details (mention all the details, do not miss even any small information according to the query) "
+            "as bulleted or numbered Markdown lists. Leave a blank line between separate topics for readability. Avoid long paragraphs."
+        )
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", system_msg),
-        ("human", "{input}"),
-        ("placeholder", "{agent_scratchpad}"),
-    ])
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_msg),
+            ("human", "{input}"),
+            ("placeholder", "{agent_scratchpad}"),
+        ])
 
-    agent = create_tool_calling_agent(llm, [tavily_tool], prompt)
-    agent_exec = AgentExecutor(agent=agent, tools=[tavily_tool], verbose=False)
+        agent = create_tool_calling_agent(llm, [tavily_tool], prompt)
+        agent_exec = AgentExecutor(agent=agent, tools=[tavily_tool], verbose=False)
 
-    # Generate answer ---------------------------------------------------------
-    with st.spinner("Generating answer …"):
-        try:
-            resp = agent_exec.invoke({"input": query})
-            ans = resp.get("output", "(No answer returned)")
-        except Exception as e:
-            ans = f"Error: {e}"
+        # Generate answer ----------------------------------------------------
+        with st.spinner("Generating answer …"):
+            try:
+                resp = agent_exec.invoke({"input": query})
+                ans = resp.get("output", "(No answer returned)")
+            except Exception as inner_e:
+                ans = f"Error while generating answer: {inner_e}"
 
-    # Render within a scrollable box -----------------------------------------
-    answer_placeholder.markdown(
-        f"<div id='answer-box' class='box'>{ans}</div>", unsafe_allow_html=True
-    )
+        answer_placeholder.markdown(
+            f"<div id='answer-box' class='box'>{ans}</div>", unsafe_allow_html=True
+        )
+
+    except Exception as e:
+        # Show any top-level error without crashing the app
+        answer_placeholder.markdown(
+            f"<div id='answer-box' class='box'>Error: {e}</div>", unsafe_allow_html=True
+        )
